@@ -11,6 +11,13 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
+from data_processing.channel_extractor import (
+    extract_channel_data,
+    get_channel_videos,
+    get_video_statistics
+)
+
+
 from data_processing.channel_extractor import extract_channel_data
 
 st.title("📊 YouTube Channel Analytics Dashboard")
@@ -63,3 +70,35 @@ if st.button("Fetch Channel Data"):
 
 
             st.dataframe(df)
+st.write("## 📈 Video Analytics")
+
+videos = get_channel_videos(channel_id)
+video_ids = [v["video_id"] for v in videos]
+
+video_stats = get_video_statistics(video_ids)
+
+import pandas as pd
+
+video_df = pd.DataFrame(video_stats)
+
+if not video_df.empty:
+
+    video_df["engagement_rate"] = (
+        (video_df["likes"] + video_df["comments"]) / video_df["views"]
+    )
+
+    # Merge titles
+    titles_df = pd.DataFrame(videos)[["video_id", "title"]]
+    video_df = video_df.merge(titles_df, on="video_id")
+
+    # Top 10 by views
+    top_videos = video_df.sort_values("views", ascending=False).head(10)
+
+    st.write("### 🔝 Top 10 Videos by Views")
+    st.dataframe(top_videos[[
+        "title", "views", "likes", "comments", "engagement_rate"
+    ]])
+
+    st.write("### 📊 Views vs Likes Chart")
+    st.bar_chart(top_videos.set_index("title")[["views", "likes"]])
+           

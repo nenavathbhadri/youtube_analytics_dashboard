@@ -48,3 +48,65 @@ def extract_channel_data(channel_id):
     except HttpError as e:
         print("API Error:", e)
         return None
+
+
+#Get All Video IDs
+def get_channel_videos(channel_id, max_results=50):
+    try:
+        videos = []
+        next_page_token = None
+
+        while True:
+            request = youtube.search().list(
+                part="snippet",
+                channelId=channel_id,
+                maxResults=max_results,
+                order="date",
+                type="video",
+                pageToken=next_page_token
+            )
+
+            response = request.execute()
+
+            for item in response["items"]:
+                videos.append({
+                    "video_id": item["id"]["videoId"],
+                    "title": item["snippet"]["title"],
+                    "published_at": item["snippet"]["publishedAt"]
+                })
+
+            next_page_token = response.get("nextPageToken")
+            if not next_page_token:
+                break
+
+        return videos
+
+    except Exception as e:
+        print("Video Fetch Error:", e)
+        return []
+    
+#Video Statistics
+def get_video_statistics(video_ids):
+    try:
+        stats = []
+
+        for i in range(0, len(video_ids), 50):
+            request = youtube.videos().list(
+                part="statistics",
+                id=",".join(video_ids[i:i+50])
+            )
+            response = request.execute()
+
+            for item in response["items"]:
+                stats.append({
+                    "video_id": item["id"],
+                    "views": int(item["statistics"].get("viewCount", 0)),
+                    "likes": int(item["statistics"].get("likeCount", 0)),
+                    "comments": int(item["statistics"].get("commentCount", 0))
+                })
+
+        return stats
+
+    except Exception as e:
+        print("Video Stats Error:", e)
+        return []
