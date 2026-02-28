@@ -41,6 +41,7 @@ class Video(Base):
     description = Column(Text)
     publish_date = Column(DateTime)
     duration = Column(String(50))
+    duration_seconds = Column(Integer)
     thumbnail_url = Column(Text)
 
     channel = relationship("Channel", back_populates="videos")
