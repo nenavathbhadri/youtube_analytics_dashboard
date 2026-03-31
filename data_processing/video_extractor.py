@@ -101,6 +101,8 @@ def get_video_metadata(video_ids):
 # =====================================================
 # STEP 4: Full Extraction Pipeline
 # =====================================================
+import streamlit as st
+@st.cache_data(show_spinner=False)
 def extract_full_video_data(channel_id):
 
     playlist_id = get_uploads_playlist_id(channel_id)

@@ -1,11 +1,22 @@
+import os, sys
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+sys.path.append(BASE_DIR)
+sys.path.append(os.path.join(BASE_DIR, "app"))
+
 import streamlit as st
 import pandas as pd
 from database.search_queries import search_videos
 from database.dashboard_queries import get_all_channels
+from ui_theme import inject_theme
 
-st.set_page_config(page_title="Search & Filter", layout="wide")
+st.set_page_config(page_title="Video Explorer — TubeMetrics", layout="wide", page_icon="🔍")
+inject_theme()
 
-st.title("🔎 Advanced Video Search & Filter Engine")
+# ======================================================
+# HEADER
+# ======================================================
+st.title("🔍 Video Explorer")
+st.markdown('<p class="page-subtitle">Search, filter, and discover videos with advanced sorting and pagination</p>', unsafe_allow_html=True)
 
 # =========================================
 # SESSION STATE INIT
@@ -106,7 +117,7 @@ st.session_state.sort_order = st.sidebar.radio(
 # =========================================
 # CLEAR FILTER BUTTON
 # =========================================
-if st.sidebar.button("Clear Filters"):
+if st.sidebar.button("🗑 Clear Filters"):
     for key in [
         "keyword",
         "min_views",
@@ -140,7 +151,12 @@ results = search_videos(
 # =========================================
 # DISPLAY RESULTS
 # =========================================
-st.subheader("📊 Filtered Results")
+st.markdown("""
+<div class="section-header">
+<div class="icon">📊</div>
+<h3>Filtered Results</h3>
+</div>
+""", unsafe_allow_html=True)
 
 if results.empty:
     st.warning("No videos match selected filters.")
@@ -152,7 +168,7 @@ else:
     csv = results.to_csv(index=False).encode("utf-8")
 
     st.download_button(
-        "⬇ Download CSV",
+        "📥 Download CSV",
         csv,
         "filtered_videos.csv",
         "text/csv"
@@ -169,9 +185,18 @@ with col1:
             st.session_state.page -= 1
             st.rerun()
 
+with col2:
+    st.markdown(
+        f'<p style="text-align:center; color:#9CA3AF; font-size:0.9rem;">Page {st.session_state.page}</p>',
+        unsafe_allow_html=True
+    )
+
 with col3:
     if st.button("Next ➡"):
         st.session_state.page += 1
         st.rerun()
 
-st.caption(f"Page: {st.session_state.page}")
+# ======================================================
+# FOOTER
+# ======================================================
+st.markdown('<div class="footer-text">© 2026 TubeMetrics — YouTube Analytics Platform</div>', unsafe_allow_html=True)

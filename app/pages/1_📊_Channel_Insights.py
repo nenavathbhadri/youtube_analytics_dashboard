@@ -1,13 +1,33 @@
+import os, sys
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+sys.path.append(BASE_DIR)
+sys.path.append(os.path.join(BASE_DIR, "app"))
+
 import streamlit as st
 import pandas as pd
 from database.dashboard_queries import (
     get_all_channels,
     get_channel_kpis
 )
+from ui_theme import inject_theme
 
-st.set_page_config(page_title="Channel Overview", layout="wide")
+st.set_page_config(page_title="Channel Insights — TubeMetrics", layout="wide", page_icon="📊")
+inject_theme()
 
-st.title("📊 Channel Overview Dashboard")
+def format_large_number(num):
+    if num >= 1_000_000_000:
+        return f"{num/1_000_000_000:.2f}B"
+    elif num >= 1_000_000:
+        return f"{num/1_000_000:.2f}M"
+    elif num >= 1_000:
+        return f"{num/1_000:.2f}K"
+    return str(int(num))
+
+# ======================================================
+# HEADER
+# ======================================================
+st.title("📊 Channel Insights")
+st.markdown('<p class="page-subtitle">Deep-dive into channel KPIs and cross-channel comparison</p>', unsafe_allow_html=True)
 
 # ======================================================
 # SIDEBAR - Channel Selection
@@ -66,23 +86,29 @@ if kpi_df.empty:
 data = kpi_df.iloc[0]
 
 st.subheader(f"Overview for {selected_channel_name}")
-st.markdown("### 📌 Key Performance Indicators(KPI)")
+
+st.markdown("""
+<div class="section-header">
+<div class="icon">📌</div>
+<h3>Key Performance Indicators</h3>
+</div>
+""", unsafe_allow_html=True)
 
 col1, col2, col3, col4 = st.columns(4)
 
 col1.metric(
     "Subscribers",
-    f"{int(data['subscribers']):,}"
+    format_large_number(data['subscribers'])
 )
 
 col2.metric(
     "Total Videos",
-    f"{int(data['total_videos']):,}"
+    format_large_number(data['total_videos'])
 )
 
 col3.metric(
     "Total Views",
-    f"{int(data['total_views']):,}"
+    format_large_number(data['total_views'])
 )
 
 col4.metric(
@@ -98,7 +124,12 @@ st.markdown("---")
 
 if compare_channels:
 
-    st.subheader("📈 Channel Comparison")
+    st.markdown("""
+    <div class="section-header">
+    <div class="icon">📈</div>
+    <h3>Channel Comparison</h3>
+    </div>
+    """, unsafe_allow_html=True)
 
     comparison_data = []
 
@@ -121,3 +152,8 @@ if compare_channels:
             compare_df,
             use_container_width=True
         )
+
+# ======================================================
+# FOOTER
+# ======================================================
+st.markdown('<div class="footer-text">© 2026 TubeMetrics — YouTube Analytics Platform</div>', unsafe_allow_html=True)

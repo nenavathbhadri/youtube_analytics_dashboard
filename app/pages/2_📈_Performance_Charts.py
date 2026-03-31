@@ -1,3 +1,8 @@
+import os, sys
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+sys.path.append(BASE_DIR)
+sys.path.append(os.path.join(BASE_DIR, "app"))
+
 import streamlit as st
 import plotly.express as px
 import pandas as pd
@@ -7,10 +12,16 @@ from database.dashboard_queries import (
     get_top_10_videos,
     get_upload_distribution
 )
+from ui_theme import inject_theme, PLOTLY_DARK_TEMPLATE
 
-st.set_page_config(page_title="Visualizations - Part 1", layout="wide")
+st.set_page_config(page_title="Performance Charts — TubeMetrics", layout="wide", page_icon="📈")
+inject_theme()
 
-st.title("📊 Data Visualization Dashboard (Part 1)")
+# ======================================================
+# HEADER
+# ======================================================
+st.title("📈 Performance Charts")
+st.markdown('<p class="page-subtitle">Visualize views, top videos, uploads, and engagement patterns</p>', unsafe_allow_html=True)
 
 # ======================================================
 # Sidebar Channel Selection
@@ -35,10 +46,30 @@ selected_channel_name = st.sidebar.selectbox(
 
 selected_channel_id = channel_options[selected_channel_name]
 
+# Chart color palette
+COLORS = ["#6C63FF", "#00D9FF", "#FF6B6B", "#00C853", "#FF8E53", "#A78BFA"]
+
+def style_chart(fig):
+    """Apply consistent dark styling to a plotly figure."""
+    fig.update_layout(
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        font=dict(family="Inter", color="#E8E8F0"),
+        xaxis=dict(gridcolor="rgba(255,255,255,0.05)"),
+        yaxis=dict(gridcolor="rgba(255,255,255,0.05)"),
+        legend=dict(font=dict(color="#9CA3AF"))
+    )
+    return fig
+
 # ======================================================
 # 1️⃣ Views Over Time (Line Chart)
 # ======================================================
-st.subheader("📈 Views Over Time")
+st.markdown("""
+<div class="section-header">
+<div class="icon">📈</div>
+<h3>Views Over Time</h3>
+</div>
+""", unsafe_allow_html=True)
 
 views_df = get_views_over_time(selected_channel_id)
 
@@ -49,11 +80,12 @@ if not views_df.empty:
         x="publish_date",
         y="total_views",
         markers=True,
-        template="simple_white",
-        title="Views Trend Over Time"
+        template=PLOTLY_DARK_TEMPLATE,
+        title="Views Trend Over Time",
+        color_discrete_sequence=[COLORS[0]]
     )
 
-    st.plotly_chart(fig1, use_container_width=True)
+    st.plotly_chart(style_chart(fig1), use_container_width=True)
 else:
     st.info("No view trend data available.")
 
@@ -62,7 +94,12 @@ st.divider()
 # ======================================================
 # 2️⃣ Top 10 Most Viewed Videos (Bar Chart)
 # ======================================================
-st.subheader("🔝 Top 10 Most Viewed Videos")
+st.markdown("""
+<div class="section-header">
+<div class="icon">🔝</div>
+<h3>Top 10 Most Viewed Videos</h3>
+</div>
+""", unsafe_allow_html=True)
 
 top_videos_df = get_top_10_videos(selected_channel_id)
 
@@ -73,13 +110,14 @@ if not top_videos_df.empty:
         x="title",
         y="views",
         hover_data=["likes", "comments"],
-        template="simple_white",
-        title="Top 10 Videos by Views"
+        template=PLOTLY_DARK_TEMPLATE,
+        title="Top 10 Videos by Views",
+        color_discrete_sequence=[COLORS[1]]
     )
 
     fig2.update_layout(xaxis_tickangle=-40)
 
-    st.plotly_chart(fig2, use_container_width=True)
+    st.plotly_chart(style_chart(fig2), use_container_width=True)
 else:
     st.info("No top videos available.")
 
@@ -88,7 +126,12 @@ st.divider()
 # ======================================================
 # 3️⃣ Monthly Upload Distribution (Pie Chart)
 # ======================================================
-st.subheader("🗓 Monthly Upload Distribution")
+st.markdown("""
+<div class="section-header">
+<div class="icon">🗓</div>
+<h3>Monthly Upload Distribution</h3>
+</div>
+""", unsafe_allow_html=True)
 
 upload_df = get_upload_distribution(selected_channel_id)
 
@@ -98,9 +141,10 @@ if not upload_df.empty:
         upload_df,
         names="upload_month",
         values="total_videos",
-        template="simple_white",
+        template=PLOTLY_DARK_TEMPLATE,
         title="Monthly Video Distribution",
-        hole=0.4  # Makes it look more modern (donut style)
+        hole=0.4,
+        color_discrete_sequence=COLORS
     )
 
     fig3.update_traces(
@@ -108,7 +152,7 @@ if not upload_df.empty:
         hovertemplate="<b>%{label}</b><br>Videos: %{value}<br>Percentage: %{percent}"
     )
 
-    st.plotly_chart(fig3, use_container_width=True)
+    st.plotly_chart(style_chart(fig3), use_container_width=True)
 
 else:
     st.info("No upload distribution data available.")
@@ -118,7 +162,12 @@ st.divider()
 # ======================================================
 # 4️⃣ Scatter Plot - Views vs Engagement
 # ======================================================
-st.subheader("📊 Views vs Engagement")
+st.markdown("""
+<div class="section-header">
+<div class="icon">📊</div>
+<h3>Views vs Engagement</h3>
+</div>
+""", unsafe_allow_html=True)
 
 if not top_videos_df.empty:
 
@@ -132,10 +181,16 @@ if not top_videos_df.empty:
         y="engagement",
         size="engagement",
         hover_name="title",
-        template="simple_white",
-        title="Views vs Engagement"
+        template=PLOTLY_DARK_TEMPLATE,
+        title="Views vs Engagement",
+        color_discrete_sequence=[COLORS[2]]
     )
 
-    st.plotly_chart(fig4, use_container_width=True)
+    st.plotly_chart(style_chart(fig4), use_container_width=True)
 else:
     st.info("No scatter data available.")
+
+# ======================================================
+# FOOTER
+# ======================================================
+st.markdown('<div class="footer-text">© 2026 TubeMetrics — YouTube Analytics Platform</div>', unsafe_allow_html=True)

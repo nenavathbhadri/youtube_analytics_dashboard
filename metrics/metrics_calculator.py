@@ -1,8 +1,11 @@
 import pandas as pd
 import numpy as np
-
 import re
+import streamlit as st
 
+# ==========================================================
+# Convert Duration
+# ==========================================================
 def convert_duration_to_seconds(duration):
     if not isinstance(duration, str):
         return 0
@@ -21,124 +24,58 @@ def convert_duration_to_seconds(duration):
         seconds = int(second_match.group(1))
 
     return hours * 3600 + minutes * 60 + seconds
-# ==========================================================
-# 1️⃣ Engagement Rate
-# ==========================================================
-def calculate_engagement_rate(df):
-
-    df["engagement_rate"] = np.where(
-        df["views"] > 0,
-        ((df["likes"] + df["comments"]) / df["views"]) * 100,
-        0
-    )
-
-    return df
 
 
 # ==========================================================
-# 2️⃣ Average Views Per Video
+# FULL KPI PIPELINE (Optimized + Cached)
 # ==========================================================
-def calculate_average_views(df):
-    return df["views"].mean()
+@st.cache_data(show_spinner=False)
+def run_full_transformation(df, total_views, total_subscribers):
 
+    df = df.copy()
 
-# ==========================================================
-# 3️⃣ Subscriber to View Ratio
-# ==========================================================
-def calculate_subscriber_view_ratio(total_views, total_subscribers):
+    # Avoid division by zero
+    df["views"] = df["views"].replace(0, 1)
 
-    if total_subscribers == 0:
-        return 0
+    # Duration conversion
+    df["duration_seconds"] = df["duration"].apply(convert_duration_to_seconds)
 
-    return total_views / total_subscribers
+    # Vectorized engagement rate
+    df["engagement_rate"] = (
+        (df["likes"] + df["comments"]) / df["views"]
+    ) * 100
 
-
-# ==========================================================
-# 4️⃣ Content Performance Score
-# ==========================================================
-def calculate_content_score(df):
-
-    # Weighted scoring model
+    # Content score (vectorized)
     df["performance_score"] = (
         (df["views"] * 0.5) +
         (df["likes"] * 0.3) +
         (df["comments"] * 0.2)
     )
 
-    return df
-
-
-# ==========================================================
-# 5️⃣ Optimal Posting Time
-# ==========================================================
-def analyze_optimal_posting_time(df):
-
-    df["publish_date"] = pd.to_datetime(df["publish_date"], errors="coerce")
-
-    df["publish_hour"] = df["publish_date"].dt.hour
-
-    optimal = (
-        df.groupby("publish_hour")["views"]
-        .mean()
-        .reset_index()
-        .sort_values("views", ascending=False)
-    )
-
-    return optimal
-
-
-# ==========================================================
-# 6️⃣ Monthly Trend Analysis
-# ==========================================================
-def monthly_trend(df):
-
-    df["publish_date"] = pd.to_datetime(df["publish_date"], errors="coerce")
-
-    df["month"] = df["publish_date"].dt.to_period("M")
-
-    trend = (
-        df.groupby("month")["views"]
-        .sum()
-        .reset_index()
-    )
-
-    trend["month"] = trend["month"].astype(str)
-
-    return trend
-
-
-# ==========================================================
-# 7️⃣ Benchmark Videos vs Channel Average
-# ==========================================================
-def benchmark_videos(df):
-
+    # Average views (store once)
     avg_views = df["views"].mean()
 
+    # Benchmark
     df["vs_channel_avg"] = np.where(
         df["views"] >= avg_views,
         "Above Average",
         "Below Average"
     )
 
-    return df
+    # Subscriber/View ratio
+    sub_view_ratio = total_subscribers / total_views if total_views else 0
 
+    # Date processing (vectorized)
+    df["publish_date"] = pd.to_datetime(df["publish_date"], errors="coerce")
 
-# ==========================================================
-# 8️⃣ Prepare Full KPI Pipeline
-# ==========================================================
-def run_full_transformation(df, total_views, total_subscribers):
-    df["duration_seconds"] = df["duration"].apply(convert_duration_to_seconds)
-    df = calculate_engagement_rate(df)
-    df = calculate_content_score(df)
-    df = benchmark_videos(df)
+    # Monthly trend
+    df["month"] = df["publish_date"].dt.to_period("M")
+    monthly_views = df.groupby("month")["views"].sum().reset_index()
+    monthly_views["month"] = monthly_views["month"].astype(str)
 
-    avg_views = calculate_average_views(df)
-    sub_view_ratio = calculate_subscriber_view_ratio(
-        total_views, total_subscribers
-    )
-
-    optimal_time = analyze_optimal_posting_time(df)
-    monthly_views = monthly_trend(df)
+    # Optimal posting time
+    df["publish_hour"] = df["publish_date"].dt.hour
+    optimal_time = df.groupby("publish_hour")["views"].mean().reset_index()
 
     return {
         "transformed_df": df,
@@ -147,4 +84,3 @@ def run_full_transformation(df, total_views, total_subscribers):
         "optimal_posting_time": optimal_time,
         "monthly_trend": monthly_views
     }
-  

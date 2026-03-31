@@ -14,4 +14,10 @@ DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
 engine = create_engine(DATABASE_URL)
 
 def get_engine():
-    return engine
+    return create_engine(
+        DATABASE_URL,
+        pool_size=10,
+        max_overflow=20,
+        pool_timeout=30,
+        pool_recycle=1800
+    )

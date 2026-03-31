@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 
+
 API_KEY = os.getenv("YOUTUBE_API_KEY")
 
 if not API_KEY:
@@ -15,7 +16,8 @@ if not API_KEY:
 
 youtube = build("youtube", "v3", developerKey=API_KEY)
 
-
+import streamlit as st
+@st.cache_data(show_spinner=False)
 def extract_channel_data(channel_id):
     try:
         request = youtube.channels().list(

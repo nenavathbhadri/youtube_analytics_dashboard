@@ -36,8 +36,8 @@ def highest_engagement_videos(channel_id):
         LIMIT 10
     """)
     return pd.read_sql(query, engine, params={"channel_id": channel_id})
-
-
+import streamlit as st
+@st.cache_data(show_spinner=False)
 def average_video_duration(channel_id):
     query = text("""
         SELECT 
